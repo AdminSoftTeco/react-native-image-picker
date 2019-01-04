@@ -240,7 +240,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
 
         NSString *fileName;
         if ([mediaType isEqualToString:(NSString *)kUTTypeImage]) {
-            NSString *tempFileName = [[NSUUID UUID] UUIDString];
+           NSString *tempFileName = [[NSUUID UUID] UUIDString];
             if (imageURL && [[imageURL absoluteString] rangeOfString:@"ext=GIF"].location != NSNotFound) {
                 fileName = [tempFileName stringByAppendingString:@".gif"];
             }
@@ -294,7 +294,7 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
             else {
                 originalImage = [info objectForKey:UIImagePickerControllerOriginalImage];
             }
-
+    
             if (imageURL) {
                 PHAsset *pickedAsset = [PHAsset fetchAssetsWithALAssetURLs:@[imageURL] options:nil].lastObject;
                 NSString *originalFilename = [self originalFilenameForAsset:pickedAsset assetType:PHAssetResourceTypePhoto];
@@ -368,7 +368,8 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
             else {
                 data = UIImageJPEGRepresentation(editedImage, [[self.options valueForKey:@"quality"] floatValue]);
             }
-            [data writeToFile:path atomically:YES];
+            NSData *dataWithGPS = [self writeMetadataIntoImageData: data options:self.options];
+            [dataWithGPS writeToFile:path atomically:YES];
 
             if (![[self.options objectForKey:@"noData"] boolValue]) {
                 NSString *dataString = [data base64EncodedStringWithOptions:0]; // base64 encoded image string
@@ -695,6 +696,78 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
         NSLog(@"Error setting skip backup attribute: file not found");
         return NO;
     }
+}
+
+- (NSData *)writeMetadataIntoImageData:(NSData *)imageData options:(NSMutableDictionary *)options {
+    CLLocationDegrees longitude = [options[@"longitude"] doubleValue];
+    CLLocationDegrees latitude = [options[@"latitude"] doubleValue];
+    
+    CGImageSourceRef source = CGImageSourceCreateWithData((CFDataRef)imageData, NULL);
+    
+    //get all the metadata in the image
+    NSDictionary *metadata = (NSDictionary *) CFBridgingRelease(CGImageSourceCopyPropertiesAtIndex(source,0,NULL));
+    
+    //make the metadata dictionary mutable so we can add properties to it
+    NSMutableDictionary *metadataAsMutable = [metadata mutableCopy];
+    
+    NSMutableDictionary *locationDictionary = [[metadataAsMutable objectForKey:(NSString *)kCGImagePropertyGPSDictionary]mutableCopy];
+    
+    if(!locationDictionary) {
+        locationDictionary = [NSMutableDictionary dictionary];
+    }
+
+    [locationDictionary setValue:[NSNumber numberWithDouble:latitude] forKey:(NSString*)kCGImagePropertyGPSLatitude];
+    if (latitude < 0) {
+        latitude = -latitude;
+        [locationDictionary setValue:@"S" forKey:(NSString *)kCGImagePropertyGPSLatitudeRef];
+    } else {
+        [locationDictionary setValue:@"N" forKey:(NSString *)kCGImagePropertyGPSLatitudeRef];
+    }
+    
+    [locationDictionary setValue:[NSNumber numberWithDouble:longitude] forKey:(NSString*)kCGImagePropertyGPSLongitude];
+    if (longitude < 0) {
+        longitude = -longitude;
+        [locationDictionary setValue:@"W" forKey:(NSString *)kCGImagePropertyGPSLongitudeRef];
+    } else {
+        [locationDictionary setValue:@"E" forKey:(NSString *)kCGImagePropertyGPSLongitudeRef];
+    }
+    
+    double altitude = [[options objectForKey:@"altitude"] doubleValue];
+    if (!isnan(altitude)){
+        if (altitude < 0) {
+            altitude = -altitude;
+            [locationDictionary setValue:@"1" forKey:(NSString *)kCGImagePropertyGPSAltitudeRef];
+        } else {
+            [locationDictionary setValue:@"0" forKey:(NSString *)kCGImagePropertyGPSAltitudeRef];
+        }
+        [locationDictionary setValue:[NSNumber numberWithFloat:altitude] forKey:(NSString *)kCGImagePropertyGPSAltitude];
+    }
+
+    
+    [metadataAsMutable setObject:locationDictionary forKey:(NSString *)kCGImagePropertyGPSDictionary];
+    
+    CFStringRef UTI = CGImageSourceGetType(source); //this is the type of image (e.g., public.jpeg)
+    
+    NSMutableData *dest_data = [NSMutableData data];
+    
+    CGImageDestinationRef destination = CGImageDestinationCreateWithData((CFMutableDataRef)dest_data,UTI,1,NULL);
+    
+    if(!destination) {
+        NSLog(@"***Could not create image destination ***");
+    }
+    
+    CGImageDestinationAddImageFromSource(destination,source,0, (CFDictionaryRef) metadataAsMutable);
+    
+    BOOL success = NO;
+    success = CGImageDestinationFinalize(destination);
+    
+    if(!success) {
+        NSLog(@"***Could not create data from image destination ***");
+    }
+    
+    CFRelease(destination);
+    CFRelease(source);
+    return dest_data;
 }
 
 #pragma mark - Class Methods
