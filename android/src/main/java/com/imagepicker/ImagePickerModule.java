@@ -36,6 +36,7 @@ import com.imagepicker.permissions.OnImagePickerPermissionsCallback;
 import com.imagepicker.utils.MediaUtils.ReadExifResult;
 import com.imagepicker.utils.RealPathUtil;
 import com.imagepicker.utils.UI;
+import com.imagepicker.utils.Mp4MetadataWriter;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
