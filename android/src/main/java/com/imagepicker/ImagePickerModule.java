@@ -420,10 +420,13 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         responseHelper.putString("uri", data.getData().toString());
         responseHelper.putString("path", path);
         fileScan(reactContext, path);
+        new Mp4MetadataWriter().writeMetadata(path, options.getDouble("latitude"), options.getDouble("longitude"), options.getDouble("altitude"));
         responseHelper.invokeResponse(callback);
         callback = null;
         return;
     }
+
+    writeExifInterface(imageConfig, options);
 
     final ReadExifResult result = readExifInterface(responseHelper, imageConfig);
 
@@ -443,31 +446,31 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
     updatedResultResponse(uri, imageConfig.original.getAbsolutePath());
 
     // don't create a new file if contraint are respected
-    if (imageConfig.useOriginal(initialWidth, initialHeight, result.currentRotation))
-    {
+    // if (imageConfig.useOriginal(initialWidth, initialHeight, result.currentRotation))
+    // {
       responseHelper.putInt("width", initialWidth);
       responseHelper.putInt("height", initialHeight);
       fileScan(reactContext, imageConfig.original.getAbsolutePath());
-    }
-    else
-    {
-      imageConfig = getResizedImage(reactContext, this.options, imageConfig, initialWidth, initialHeight, requestCode);
-      if (imageConfig.resized == null)
-      {
-        removeUselessFiles(requestCode, imageConfig);
-        responseHelper.putString("error", "Can't resize the image");
-      }
-      else
-      {
-        uri = Uri.fromFile(imageConfig.resized);
-        BitmapFactory.decodeFile(imageConfig.resized.getAbsolutePath(), options);
-        responseHelper.putInt("width", options.outWidth);
-        responseHelper.putInt("height", options.outHeight);
+    // }
+    // else
+    // {
+    //   imageConfig = getResizedImage(reactContext, this.options, imageConfig, initialWidth, initialHeight, requestCode);
+    //   if (imageConfig.resized == null)
+    //   {
+    //     removeUselessFiles(requestCode, imageConfig);
+    //     responseHelper.putString("error", "Can't resize the image");
+    //   }
+    //   else
+    //   {
+    //     uri = Uri.fromFile(imageConfig.resized);
+    //     BitmapFactory.decodeFile(imageConfig.resized.getAbsolutePath(), options);
+    //     responseHelper.putInt("width", options.outWidth);
+    //     responseHelper.putInt("height", options.outHeight);
 
-        updatedResultResponse(uri, imageConfig.resized.getAbsolutePath());
-        fileScan(reactContext, imageConfig.resized.getAbsolutePath());
-      }
-    }
+    //     updatedResultResponse(uri, imageConfig.resized.getAbsolutePath());
+    //     fileScan(reactContext, imageConfig.resized.getAbsolutePath());
+    //   }
+    // }
 
     if (imageConfig.saveToCameraRoll && requestCode == REQUEST_LAUNCH_IMAGE_CAPTURE)
     {

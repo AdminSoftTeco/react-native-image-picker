@@ -48,7 +48,8 @@ public class MediaUtils
 
         final File path = ReadableMapUtils.hasAndNotNullReadableMap(options, "storageOptions")
                 && ReadableMapUtils.hasAndNotEmptyString(options.getMap("storageOptions"), "path")
-                ? new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), options.getMap("storageOptions").getString("path"))
+                ? new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), options.getMap("storageOptions").
+                ("path"))
                 : (!forceLocal ? Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
                               : reactContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES));
 
@@ -234,6 +235,47 @@ public class MediaUtils
                         Log.i("TAG", new StringBuilder("Finished scanning ").append(path).toString());
                     }
                 });
+    }
+
+    public static void writeExifInterface(@NonNull final ImageConfig imageConfig, @NonNull final ReadableMap options) {
+        ExifInterface exif = new ExifInterface(imageConfig.original.getAbsolutePath());
+
+        double latitude = options.getDouble("latitude");
+        double longitude = options.getDouble("longitude");
+        double altitude = options.getDouble("altitude");
+
+        try {
+            ExifInterface exif = new ExifInterface(fileAbsolutePath);
+            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertLonLatToDMS(latitude));
+            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, latitude < 0 ? "S" : "N");
+            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertLonLatToDMS(longtitude));
+            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, longtitude < 0 ? "W" : "E");
+            exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, Double.toString(altitude));
+            exif.saveAttributes();
+        } catch(IOException e) {};
+    }
+
+    private static String convertLonLatToDMS(double val) {
+        StringBuilder sb = new StringBuilder();
+
+        val = Math.abs(val);
+        int degree = (int) val;
+        val *= 60;
+        val -= (degree * 60.0d);
+        int minute = (int) val;
+        val *= 60;
+        val -= (minute * 60.0d);
+        int second = (int) (val * 1000.0d);
+
+        sb.setLength(0);
+        sb.append(degree);
+        sb.append("/1,");
+        sb.append(minute);
+        sb.append("/1,");
+        sb.append(second);
+        sb.append("/1000,");
+
+        return sb.toString();
     }
 
     public static ReadExifResult readExifInterface(@NonNull ResponseHelper responseHelper,
