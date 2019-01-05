@@ -237,18 +237,16 @@ public class MediaUtils
     }
 
     public static void writeExifInterface(@NonNull final ImageConfig imageConfig, @NonNull final ReadableMap options) {
-        ExifInterface exif = new ExifInterface(imageConfig.original.getAbsolutePath());
-
         double latitude = options.getDouble("latitude");
         double longitude = options.getDouble("longitude");
         double altitude = options.getDouble("altitude");
 
         try {
-            ExifInterface exif = new ExifInterface(fileAbsolutePath);
+            ExifInterface exif = new ExifInterface(imageConfig.original.getAbsolutePath());
             exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertLonLatToDMS(latitude));
             exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, latitude < 0 ? "S" : "N");
-            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertLonLatToDMS(longtitude));
-            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, longtitude < 0 ? "W" : "E");
+            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertLonLatToDMS(longitude));
+            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, longitude < 0 ? "W" : "E");
             exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, Double.toString(altitude));
             exif.saveAttributes();
         } catch(IOException e) {};
