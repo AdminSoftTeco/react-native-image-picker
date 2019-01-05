@@ -247,6 +247,12 @@ public class MediaUtils
             exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, latitude < 0 ? "S" : "N");
             exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertLonLatToDMS(longitude));
             exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, longitude < 0 ? "W" : "E");
+            if (altitude < 0) {
+                altitude = -altitude;
+                exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF, "1");
+            } else {
+                exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF, "0");
+            }
             exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, Double.toString(altitude));
             exif.saveAttributes();
         } catch(IOException e) {};
