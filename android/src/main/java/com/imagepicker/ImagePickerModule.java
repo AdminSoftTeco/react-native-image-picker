@@ -421,7 +421,9 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
         responseHelper.putString("uri", data.getData().toString());
         responseHelper.putString("path", path);
         fileScan(reactContext, path);
-        new Mp4MetadataWriter().writeMetadata(path, options.getDouble("latitude"), options.getDouble("longitude"), options.getDouble("altitude"));
+        try {
+          new Mp4MetadataWriter().writeMetadata(path, options.getDouble("latitude"), options.getDouble("longitude"), options.getDouble("altitude"));
+        } catch(IOException e) {};
         responseHelper.invokeResponse(callback);
         callback = null;
         return;
