@@ -85,34 +85,18 @@ public class Mp4MetadataWriter {
             moov.addBox(userDataBox);
         }
 
-        MetaBox metaBox;
-        if ((metaBox = Path.getPath(userDataBox, "meta")) == null) {
-            metaBox = new MetaBox();
-            HandlerBox hdlr;
-            hdlr = new HandlerBox();
-            hdlr.setHandlerType("mdir");
-            metaBox.addBox(hdlr);
-            userDataBox.addBox(metaBox);
-        }
-        AppleItemListBox ilst;
-        if ((ilst = Path.getPath(metaBox, "ilst")) == null) {
-            ilst = new AppleItemListBox();
-            metaBox.addBox(ilst);
-
-        }
         if (freeBox == null) {
             freeBox = new FreeBox(128 * 1024);
-            metaBox.addBox(freeBox);
+            moov.addBox(freeBox);
         }
-
-        // Got Apple List Box
 
         AppleGPSCoordinatesBox gps;
-        if ((gps = Path.getPath(ilst, AppleGPSCoordinatesBox.TYPE)) == null) {
+        if ((gps = Path.getPath(userDataBox, AppleGPSCoordinatesBox.TYPE)) == null) {
             gps = new AppleGPSCoordinatesBox();
         }
-        gps.setValue(lon + "," + lat + "," + ele);
-        ilst.addBox(gps);
+
+        gps.setValue(String.format("%+09.5f%+010.5f%+.0fCRSWGS_84", lat, lon, ele));
+        userDataBox.addBox(gps);
 
         long sizeAfter = moov.getSize();
         long diff = sizeAfter - sizeBefore;
@@ -125,9 +109,11 @@ public class Mp4MetadataWriter {
             sizeAfter = moov.getSize();
             diff = sizeAfter - sizeBefore;
         }
+
         if (correctOffset && diff != 0) {
             correctChunkOffsets(moov, diff);
         }
+
         BetterByteArrayOutputStream baos = new BetterByteArrayOutputStream();
         moov.getBox(Channels.newChannel(baos));
         isoFile.close();
